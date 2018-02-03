@@ -1,5 +1,5 @@
 {
-	"name" : "icircle/search-query-parser",
+	"name" : "php-platform/search-query-parser",
 	"description" : "a library to parse search query parameters from a rest request ",
 	"type" : "library",
 	"authors" : [{
