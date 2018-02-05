@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<phpunit colors="true" bootstrap="vendor/autoload.php" >
+<phpunit colors="true" bootstrap="tests/autoload.php" >
     <testsuites>
         <testsuite name="php-platform/search-query-params">
             <directory suffix=".php">./tests</directory>

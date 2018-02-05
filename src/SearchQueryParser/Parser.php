@@ -1,6 +1,6 @@
 <?php
 
-namespace ICircle\Accounts\Services\Utils;
+namespace PhpPlatform\SearchQueryParser;
 
 use PhpPlatform\RESTFul\HTTPRequest;
 use PhpPlatform\Errors\Exceptions\Http\_4XX\BadRequest;
@@ -9,7 +9,6 @@ use PhpPlatform\Persist\Model;
 use PhpPlatform\Persist\Field;
 use PhpPlatform\Errors\Exceptions\Application\BadInputException;
 use PhpPlatform\Persist\RelationalMappingUtil;
-use PhpPlatform\SearchQueryParser\FindParams;
 
 class Parser {
 	
@@ -19,8 +18,10 @@ class Parser {
 	 * @param HTTPRequest $request is the HTTPRequest object received in the rest service 
 	 * @param string $modelClassName is the full name of the Model which is served as REST Resource 
 	 * @param string[] $excludeFromFullTextSearch is the array of fields which needs to be excluded from performing full text search 
+	 * 
+	 * @return FindParams
 	 */
-	static public function parse($request,$modelClassName,$excludeFromFullTextSearch){
+	static public function parse($request,$modelClassName,$excludeFromFullTextSearch = array()){
 		$findParams = new FindParams();
 		try{
 			// full text search query
@@ -31,10 +32,13 @@ class Parser {
 		}catch (\Exception $e){
 			throw new BadRequest("Bad Search Params");
 		}
-		$findParams;
+		return $findParams;
 	}
 	
 	private static function parseFullTextSearch($request,$modelClassName,$excludeFromFullTextSearch){
+		if(!is_array($excludeFromFullTextSearch)){
+			$excludeFromFullTextSearch = array();
+		}
 		$whereExpression = null;
 		$fullTextSearchQuery = $request->getQueryParam('q');
 		if($fullTextSearchQuery != null){
@@ -66,7 +70,7 @@ class Parser {
 			
 			foreach ($classList as $className=>$class){
 				foreach ($class['fields'] as $fieldName=>$field){
-					if(RelationalMappingUtil::_isGet($field) && in_array($fieldName, $fieldSpecificFilters)){
+					if(RelationalMappingUtil::_isGet($field) && array_key_exists($fieldName, $fieldSpecificFilters)){
 						$filterValue = $fieldSpecificFilters[$fieldName];
 						if(is_scalar($filterValue)){
 							$filters[$fieldName]=$filterValue;
