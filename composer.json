@@ -28,5 +28,6 @@
 			"PhpPlatform\\Tests\\" : "tests/"
 		}
 	},
-	"minimum-stability" : "stable"
+	"minimum-stability" : "stable",
+	"license" : "Apache-2.0"
 }

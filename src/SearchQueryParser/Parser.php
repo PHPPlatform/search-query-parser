@@ -10,7 +10,6 @@ use PhpPlatform\Persist\Field;
 use PhpPlatform\Errors\Exceptions\Application\BadInputException;
 use PhpPlatform\Persist\RelationalMappingUtil;
 use PhpPlatform\SearchQueryParser\FindParams;
-use PhpPlatform\Persist\Reflection;
 
 class Parser {
 	
@@ -26,49 +25,13 @@ class Parser {
 		try{
 			// full text search query
 			$findParams->where = self::parseFullTextSearch($request, $modelClassName, $excludeFromFullTextSearch);
-			
-			// filters
-			
-			
-			// sort
-			$sort = array();
-			$sortParams = $request->getQueryParam('s');
-			if($sortParams!= null){
-				$sortParams= base64_decode($sortParams);
-				$sortParams= json_decode($sortParams,true);
-				if(!is_array($sortParams)){
-					throw new BadInputException("query parameter s is invalid");
-				}
-				
-				foreach ($sortParams as $field=>$value){
-					if(in_array($field, $fields)){
-						if($value != Model::SORTBY_ASC && $value != Model::SORTBY_DESC){
-							throw new BadRequest("query parameter s is invalid");
-						}
-						$sort[$field] = $value;
-					}else{
-						throw new BadRequest("query parameter s is invalid");
-					}
-				}
-			}
-			
-			// pagination
-			$pagination = null;
-			$paginationParam = $request->getQueryParam('p');
-			if($paginationParam != null){
-				$paginationParam = preg_split('/-/', $paginationParam);
-				if(count($paginationParam) != 2 || 
-						(!is_numeric($paginationParam[0]) || !is_int($paginationParam[0]+0)) || 
-						(!is_numeric($paginationParam[0]) || !is_int($paginationParam[1]+0)) ){
-					throw new BadRequest('query parameter p is invalid');
-				}
-				$pagination = array('pageNumber'=>$paginationParam[0],'pageSize'=>$paginationParam[1]);
-			}
-			
+			$findParams->filters = self::parseFilters($request, $modelClassName);
+			$findParams->sort = self::parseSort($request, $modelClassName);
+			$findParams->pagination = self::parsePagination($request);
 		}catch (\Exception $e){
 			throw new BadRequest("Bad Search Params");
 		}
-		return ["filters" => $filters,"sort"=>$sort,"pagination"=>$pagination,"where"=>$whereExpression];
+		$findParams;
 	}
 	
 	private static function parseFullTextSearch($request,$modelClassName,$excludeFromFullTextSearch){
@@ -99,26 +62,83 @@ class Parser {
 				throw new BadInputException("query parameter f is invalid");
 			}
 			
-			foreach ($fieldSpecificFilters as $field=>$value){
-				Reflection::hasProperty($modelClassName, $field);
-				if(in_array($field, $fields)){
-					if(is_scalar($value)){
-						$filters[$field] = $value;
-					}else if(is_array($value)){
-						foreach ($value as $operator=>$operands){
-							// expression validates for the valid expression syntax
-							new Expression($operator, [new Field($modelClassName, $field), $operands]);
+			$classList = RelationalMappingUtil::getClassConfiguration($modelClassName);
+			
+			foreach ($classList as $className=>$class){
+				foreach ($class['fields'] as $fieldName=>$field){
+					if(RelationalMappingUtil::_isGet($field) && in_array($fieldName, $fieldSpecificFilters)){
+						$filterValue = $fieldSpecificFilters[$fieldName];
+						if(is_scalar($filterValue)){
+							$filters[$fieldName]=$filterValue;
+						}else if (is_array($filterValue) && count($filterValue) == 1){
+							foreach ($filterValue as $operator=>$operands){
+								// expression validates for the valid expression syntax
+								try{
+								    new Expression($operator, [new Field($className, $field), $operands]);
+								}catch (\Exception $e){
+									throw new BadRequest("query parameter f is invalid");
+								}
+							}
+							$filters[$fieldName] = $filterValue;
+						}else{
+							throw new BadRequest("query parameter f is invalid");
 						}
-						$filters[$field] = $value;
-					}else{
-						throw new BadRequest("query parameter f is invalid");
+						unset($fieldSpecificFilters[$fieldName]);
 					}
-				}else{
-					throw new BadRequest("query parameter f is invalid");
 				}
+			}
+			
+			if(count($fieldSpecificFilters) != 0){
+				throw new BadRequest("query parameter f is invalid");
 			}
 		}
 		return $filters;
+	}
+	
+	private static function parseSort($request,$modelClassName){
+		$sort = array();
+		$sortParams = $request->getQueryParam('s');
+		if($sortParams!= null){
+			$sortParams= base64_decode($sortParams);
+			$sortParams= json_decode($sortParams,true);
+			if(!is_array($sortParams)){
+				throw new BadInputException("query parameter s is invalid");
+			}
+			
+			$classList = RelationalMappingUtil::getClassConfiguration($modelClassName);
+			
+			foreach ($classList as $class){
+				foreach ($class['fields'] as $fieldName=>$field){
+					if(RelationalMappingUtil::_isGet($field) && in_array($fieldName, $sortParams)){
+						$sortValue = $sortParams[$fieldName];
+						if($sortValue != Model::SORTBY_ASC && $sortValue != Model::SORTBY_DESC){
+							throw new BadRequest("query parameter s is invalid");
+						}
+						$sort[$field] = $sortValue;
+						unset($sortParams[$fieldName]);
+					}
+				}
+			}
+			if(count($sortParams) != 0){
+				throw new BadRequest("query parameter s is invalid");
+			}
+		}
+		return $sort;
+	}
+	
+	private static function parsePagination($request){
+		$pagination = null;
+		$paginationParam = $request->getQueryParam('p');
+		if($paginationParam != null){
+			$paginationParam = preg_split('/-/', $paginationParam);
+			if(count($paginationParam) != 2 ||
+					(!is_numeric($paginationParam[0]) || !is_int($paginationParam[0]+0)) ||
+					(!is_numeric($paginationParam[0]) || !is_int($paginationParam[1]+0)) ){
+						throw new BadRequest('query parameter p is invalid');
+			}
+			$pagination = array('pageNumber'=>$paginationParam[0],'pageSize'=>$paginationParam[1]);
+		}
+		return $pagination;
 	}
 	
 }

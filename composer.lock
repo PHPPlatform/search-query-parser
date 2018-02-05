@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "490d09fcbec3321e1314391186a7087b",
+    "content-hash": "92928beb544ad0aa142e74662f16162f",
     "packages": [
         {
             "name": "php-platform/annotations",
@@ -94,20 +94,20 @@
         },
         {
             "name": "php-platform/errors",
-            "version": "v0.1.3",
+            "version": "v0.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPPlatform/errors.git",
-                "reference": "44e55463ef2ad61042be70e477323964f84fbb58"
+                "reference": "82ac3035eab509624f467139c5beae9687d96c98"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPPlatform/errors/zipball/44e55463ef2ad61042be70e477323964f84fbb58",
-                "reference": "44e55463ef2ad61042be70e477323964f84fbb58",
+                "url": "https://api.github.com/repos/PHPPlatform/errors/zipball/82ac3035eab509624f467139c5beae9687d96c98",
+                "reference": "82ac3035eab509624f467139c5beae9687d96c98",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3",
+                "php": ">=5.4",
                 "php-platform/config": "~0.1"
             },
             "require-dev": {
@@ -136,7 +136,7 @@
                 "logging",
                 "php-platform"
             ],
-            "time": "2017-02-06T04:49:29+00:00"
+            "time": "2018-02-05T14:24:20+00:00"
         },
         {
             "name": "php-platform/json-cache",
