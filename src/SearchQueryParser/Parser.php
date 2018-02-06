@@ -23,15 +23,10 @@ class Parser {
 	 */
 	static public function parse($request,$modelClassName,$excludeFromFullTextSearch = array()){
 		$findParams = new FindParams();
-		try{
-			// full text search query
-			$findParams->where = self::parseFullTextSearch($request, $modelClassName, $excludeFromFullTextSearch);
-			$findParams->filters = self::parseFilters($request, $modelClassName);
-			$findParams->sort = self::parseSort($request, $modelClassName);
-			$findParams->pagination = self::parsePagination($request);
-		}catch (\Exception $e){
-			throw new BadRequest("Bad Search Params");
-		}
+		$findParams->where = self::parseFullTextSearch($request, $modelClassName, $excludeFromFullTextSearch);
+		$findParams->filters = self::parseFilters($request, $modelClassName);
+		$findParams->sort = self::parseSort($request, $modelClassName);
+		$findParams->pagination = self::parsePagination($request);
 		return $findParams;
 	}
 	
@@ -46,7 +41,10 @@ class Parser {
 			$classList = RelationalMappingUtil::getClassConfiguration($modelClassName);
 			foreach ($classList as $className => $class){
 				foreach ($class['fields'] as $fieldName => $field){
-					if(RelationalMappingUtil::_isGet($field) && !RelationalMappingUtil::_isAutoIncrement($field) && !in_array($fieldName, $excludeFromFullTextSearch)){
+					if(RelationalMappingUtil::_isGet($field) && 
+						!RelationalMappingUtil::_isAutoIncrement($field) && 
+						!RelationalMappingUtil::_isReference($field) &&
+						!in_array($fieldName, $excludeFromFullTextSearch)){
 						$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $field), $fullTextSearchQuery]);
 					}
 				}
@@ -63,7 +61,7 @@ class Parser {
 			$fieldSpecificFilters = base64_decode($fieldSpecificFilters);
 			$fieldSpecificFilters = json_decode($fieldSpecificFilters,true);
 			if(!is_array($fieldSpecificFilters)){
-				throw new BadInputException("query parameter f is invalid");
+				throw new BadRequest(['f'=>'invalid']);
 			}
 			
 			$classList = RelationalMappingUtil::getClassConfiguration($modelClassName);
@@ -78,14 +76,14 @@ class Parser {
 							foreach ($filterValue as $operator=>$operands){
 								// expression validates for the valid expression syntax
 								try{
-								    new Expression($operator, [new Field($className, $field), $operands]);
+								    new Expression($operator, [new Field($className, $fieldName), $operands]);
 								}catch (\Exception $e){
-									throw new BadRequest("query parameter f is invalid");
+									throw new BadRequest(['f'=>'invalid']);
 								}
 							}
 							$filters[$fieldName] = $filterValue;
 						}else{
-							throw new BadRequest("query parameter f is invalid");
+							throw new BadRequest(['f'=>'invalid']);
 						}
 						unset($fieldSpecificFilters[$fieldName]);
 					}
@@ -93,7 +91,7 @@ class Parser {
 			}
 			
 			if(count($fieldSpecificFilters) != 0){
-				throw new BadRequest("query parameter f is invalid");
+				throw new BadRequest(['f'=>'invalid']);
 			}
 		}
 		return $filters;
@@ -106,25 +104,25 @@ class Parser {
 			$sortParams= base64_decode($sortParams);
 			$sortParams= json_decode($sortParams,true);
 			if(!is_array($sortParams)){
-				throw new BadInputException("query parameter s is invalid");
+				throw new BadRequest(['s'=>'invalid']);
 			}
 			
 			$classList = RelationalMappingUtil::getClassConfiguration($modelClassName);
 			
 			foreach ($classList as $class){
 				foreach ($class['fields'] as $fieldName=>$field){
-					if(RelationalMappingUtil::_isGet($field) && in_array($fieldName, $sortParams)){
+					if(RelationalMappingUtil::_isGet($field) && array_key_exists($fieldName, $sortParams)){
 						$sortValue = $sortParams[$fieldName];
 						if($sortValue != Model::SORTBY_ASC && $sortValue != Model::SORTBY_DESC){
-							throw new BadRequest("query parameter s is invalid");
+							throw new BadRequest(['s'=>'invalid']);
 						}
-						$sort[$field] = $sortValue;
+						$sort[$fieldName] = $sortValue;
 						unset($sortParams[$fieldName]);
 					}
 				}
 			}
 			if(count($sortParams) != 0){
-				throw new BadRequest("query parameter s is invalid");
+				throw new BadRequest(['s'=>'invalid']);
 			}
 		}
 		return $sort;
@@ -138,7 +136,7 @@ class Parser {
 			if(count($paginationParam) != 2 ||
 					(!is_numeric($paginationParam[0]) || !is_int($paginationParam[0]+0)) ||
 					(!is_numeric($paginationParam[0]) || !is_int($paginationParam[1]+0)) ){
-						throw new BadRequest('query parameter p is invalid');
+						throw new BadRequest(['p'=>'invalid']);
 			}
 			$pagination = array('pageNumber'=>$paginationParam[0],'pageSize'=>$paginationParam[1]);
 		}

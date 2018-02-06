@@ -1,11 +1,13 @@
 <?php
 namespace PhpPlatform\Tests\SearchQueryParser\Models;
 
+use PhpPlatform\Persist\Model;
+
 /**
  * @tableName M1
  * @prefix m1
  */
-class M1 {
+class M1 extends Model{
 	
 	/**
      * @columnName ID
