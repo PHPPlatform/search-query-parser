@@ -9,3 +9,10 @@ if(!function_exists('getallheaders')){
 		return [];
 	}
 }
+
+// following $_SERVER paramaeters are prefilled to avoid notices in CI Environment
+$_SERVER['REMOTE_ADDR'] = 'localhost';
+$_SERVER['REQUEST_URI'] = '/tests';
+$_SERVER['PLATFORM_APPLICATION_PATH '] = '/tests';
+$_SERVER['HTTP_HOST'] = 'localhost';
+$_SERVER['REQUEST_METHOD'] = 'GET';
