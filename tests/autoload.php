@@ -1,6 +1,7 @@
 <?php
 
 use PhpPlatform\Mock\Config\MockSettings;
+use PhpPlatform\Errors\ErrorHandler;
 
 include_once dirname(__FILE__).'/../vendor/autoload.php';
 
@@ -24,4 +25,5 @@ $_SERVER['REQUEST_METHOD'] = 'GET';
 MockSettings::setSettings('php-platform/persist', 'connection-class', 'PhpPlatform\Tests\SearchQueryParser\MockDataBase');
 
 // set date_default_timezone_set
+ErrorHandler::handleError();
 date_default_timezone_set('Asia/Kolkata');
