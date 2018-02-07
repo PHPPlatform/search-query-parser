@@ -40,15 +40,26 @@ class Parser {
 			$classList = RelationalMappingUtil::getClassConfiguration($modelClassName);
 			foreach ($classList as $className => $class){
 				foreach ($class['fields'] as $fieldName => $field){
-					if(RelationalMappingUtil::_isGet($field) && 
-						!RelationalMappingUtil::_isAutoIncrement($field) && 
+					if(RelationalMappingUtil::_isGet($field) &&
+						!RelationalMappingUtil::_isAutoIncrement($field) &&
 						!RelationalMappingUtil::_isReference($field) &&
 						!in_array($fieldName, $excludeFromFullTextSearch)){
-						$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $fieldName), $fullTextSearchQuery]);
+							if(RelationalMappingUtil::_isForeignField($field)){
+								$foreignClassAndField = preg_split("/\-\>/",$field['foreignField']);
+								$foreignClassName = $foreignClassAndField[0];
+								$foreignFieldName = $foreignClassAndField[1];
+								$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($foreignClassName, $foreignFieldName), $fullTextSearchQuery]);
+							}else{
+								$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $fieldName), $fullTextSearchQuery]);
+							}
 					}
 				}
 			}
-			$whereExpression = new Expression(Model::OPERATOR_OR, $fullTextSearchExpressions);
+			if(count($fullTextSearchExpressions) == 1){
+				$whereExpression = $fullTextSearchExpressions[0];
+			}else if(count($fullTextSearchExpressions) > 1){
+				$whereExpression = new Expression(Model::OPERATOR_OR, $fullTextSearchExpressions);
+			}
 		}
 		return $whereExpression;
 	}

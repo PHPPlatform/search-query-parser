@@ -41,5 +41,28 @@ class M1 extends Model{
      */
     private $password = null;
 	
-	
+    /**
+     * @columnName M3_ID
+     * @type bigint
+     * @set
+     * @get
+     */
+    private $m3Id = null;
+    
+    /**
+     * @columnName M3_ID
+     * @type varchar
+     * @get
+     * @foreignField "PhpPlatform\\Tests\\SearchQueryParser\\Models\\M3->name"
+     */
+    private $m3Name = null;
+    
+    /**
+     * @columnName M3_ID
+     * @type varchar
+     * @get
+     * @foreignField "PhpPlatform\\Tests\\SearchQueryParser\\Models\\M3->phone"
+     */
+    private $m3Phone = null;
+    
 }

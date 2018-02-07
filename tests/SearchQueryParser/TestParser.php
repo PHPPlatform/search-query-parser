@@ -122,7 +122,22 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				null,
 				['filters'=>['id'=>'1','m1Id'=>'2'],'sort'=>[],'pagination'=>null,'where'=>null]
 			],
-				
+			"with filters for foreign fields"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'f'=>base64_encode(json_encode(['m3Name'=>'m3_Name']))
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
+				null,
+				['filters'=>['m3Name'=>'m3_Name'],'sort'=>[],'pagination'=>null,'where'=>null]
+			],
+			"with filters for child model with foreign fields"=>[
+					$this->getHttpRequestWithQueryParameters([
+							'f'=>base64_encode(json_encode(['m3Id'=>'2','m3Phone'=>['LIKE'=>'1234']]))
+					]),
+					'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+					null,
+					['filters'=>['m3Id'=>'2','m3Phone'=>['LIKE'=>'1234']],'sort'=>[],'pagination'=>null,'where'=>null]
+			],
 			"with sort"=>[
 				$this->getHttpRequestWithQueryParameters([
 					's'=>base64_encode(json_encode(['name'=>'ASC']))
@@ -192,6 +207,22 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				null,
 				['filters'=>[],'sort'=>['id'=>'ASC','m1Id'=>'DESC'],'pagination'=>null,'where'=>null]
 			],
+			"with sort for foreign fields"=>[
+				$this->getHttpRequestWithQueryParameters([
+					's'=>base64_encode(json_encode(['m3Id'=>'ASC']))
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
+				null,
+				['filters'=>[],'sort'=>['m3Id'=>'ASC'],'pagination'=>null,'where'=>null]
+			],
+			"with sort for child class with foreign fields"=>[
+				$this->getHttpRequestWithQueryParameters([
+					's'=>base64_encode(json_encode(['m3Name'=>'ASC']))
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				['filters'=>[],'sort'=>['m3Name'=>'ASC'],'pagination'=>null,'where'=>null]
+			],
 				
 			"with pagination"=>[
 				$this->getHttpRequestWithQueryParameters([
@@ -252,7 +283,7 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
 				null,
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%')"]
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
 			],
 			"with full text search for child class"=>[
 				$this->getHttpRequestWithQueryParameters([
@@ -260,13 +291,35 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
 				null,
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m2.ADDRESS LIKE '%abcd%') OR (m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%')"]
-			]
-				
-				
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m2.ADDRESS LIKE '%abcd%') OR (m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+			],
+			"with full text search excluding a field"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'q'=>'abcd'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
+				['name'],
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+			],
+			"with full text search for child class and excluding a field"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'q'=>'abcd'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				['userName','address'],
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+			],
+			"with full text search for child class and excluding a foreign field"=>[
+				$this->getHttpRequestWithQueryParameters([
+					'q'=>'abcd'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				['userName','address','m3Id','m3Name'],
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+			],
 				
 		];
-		//return [$cases['with pagination wrong format 3']];
+		//return [$cases['with filters for foreign fields']];
 		return $cases;
 	}
 	
@@ -288,12 +341,14 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 	private function getColumnNameMappingForTestModels(){
 		$mapping = array();
 		
-		$classList = RelationalMappingUtil::getClassConfiguration('PhpPlatform\Tests\SearchQueryParser\Models\M2');
-		
-		foreach ($classList as $className=>$class){
-			$prefix = $class['prefix'];
-			foreach ($class['fields'] as $fieldName=>$field){
-				$mapping["$className::$fieldName"] = $prefix.'.'.$field['columnName'];
+		foreach (['PhpPlatform\Tests\SearchQueryParser\Models\M2','PhpPlatform\Tests\SearchQueryParser\Models\M3'] as $_className){
+			$classList = RelationalMappingUtil::getClassConfiguration($_className);
+			
+			foreach ($classList as $className=>$class){
+				$prefix = $class['prefix'];
+				foreach ($class['fields'] as $fieldName=>$field){
+					$mapping["$className::$fieldName"] = $prefix.'.'.$field['columnName'];
+				}
 			}
 		}
 		return $mapping;
