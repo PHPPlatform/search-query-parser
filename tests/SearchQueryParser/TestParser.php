@@ -6,6 +6,8 @@ use PhpPlatform\RESTFul\HTTPRequest;
 use PhpPlatform\SearchQueryParser\FindParams;
 use PhpPlatform\SearchQueryParser\Parser;
 use PhpPlatform\Errors\Exceptions\Http\_4XX\BadRequest;
+use PhpPlatform\Persist\RelationalMappingUtil;
+use PhpPlatform\Persist\TransactionManager;
 
 class TestParser extends \PHPUnit_Framework_TestCase{
 	
@@ -28,7 +30,14 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 			$this->assertEquals($expectedFindParams['filters'], $findParams->filters);
 			$this->assertEquals($expectedFindParams['sort'], $findParams->sort);
 			$this->assertEquals($expectedFindParams['pagination'], $findParams->pagination);
-			$this->assertEquals($expectedFindParams['where'], $findParams->where);
+			if($findParams->where != null){
+				$that = $this;
+				TransactionManager::executeInTransaction(function() use($that,$expectedFindParams,$findParams){
+					$that->assertEquals($expectedFindParams['where'], $findParams->where->asString($that->getColumnNameMappingForTestModels()));
+				});
+			}else{
+				$this->assertNull($expectedFindParams['where']);
+			}
 			
 		}catch (BadRequest $e){
 			$this->assertEquals($expectedException, $e->getBody());
@@ -182,10 +191,82 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
 				null,
 				['filters'=>[],'sort'=>['id'=>'ASC','m1Id'=>'DESC'],'pagination'=>null,'where'=>null]
+			],
+				
+			"with pagination"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'p'=>'2-100'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				['filters'=>[],'sort'=>[],'pagination'=>['pageNumber'=>2,'pageSize'=>100],'where'=>null]
+			],
+			"with pagination wrong format 1"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'p'=>'two-100'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				[],
+				['p'=>'invalid']
+			],
+			"with pagination wrong format 2"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'p'=>'1-'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				[],
+				['p'=>'invalid']
+			],
+			"with pagination wrong format 3"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'p'=>'-10'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				[],
+				['p'=>'invalid']
+			],
+			"with pagination wrong format 4"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'p'=>'10'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				[],
+				['p'=>'invalid']
+			],
+			"with pagination wrong format 5"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'p'=>'10-10-10'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				[],
+				['p'=>'invalid']
+			],
+			"with full text search "=>[
+				$this->getHttpRequestWithQueryParameters([
+						'q'=>'abcd'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
+				null,
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%')"]
+			],
+			"with full text search for child class"=>[
+				$this->getHttpRequestWithQueryParameters([
+						'q'=>'abcd'
+				]),
+				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
+				null,
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m2.ADDRESS LIKE '%abcd%') OR (m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%')"]
 			]
 				
+				
+				
 		];
-		//return [$cases['with filters with other operators']];
+		//return [$cases['with pagination wrong format 3']];
 		return $cases;
 	}
 	
@@ -204,4 +285,17 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 		return HTTPRequest::getInstance();
 	}
 	
+	private function getColumnNameMappingForTestModels(){
+		$mapping = array();
+		
+		$classList = RelationalMappingUtil::getClassConfiguration('PhpPlatform\Tests\SearchQueryParser\Models\M2');
+		
+		foreach ($classList as $className=>$class){
+			$prefix = $class['prefix'];
+			foreach ($class['fields'] as $fieldName=>$field){
+				$mapping["$className::$fieldName"] = $prefix.'.'.$field['columnName'];
+			}
+		}
+		return $mapping;
+	}
 }

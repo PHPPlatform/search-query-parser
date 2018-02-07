@@ -16,7 +16,8 @@
 		"php-platform/persist" : "~0.1"
 	},
 	"require-dev" : {
-		"phpunit/phpunit" : "~4.8"
+		"phpunit/phpunit" : "~4.8",
+		"php-platform/mock-config" : "~0.1"
 	},
 	"autoload" : {
 		"psr-4" : {

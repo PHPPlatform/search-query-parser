@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "92928beb544ad0aa142e74662f16162f",
+    "content-hash": "86399905e248a15b47ea26e4a3768122",
     "packages": [
         {
             "name": "php-platform/annotations",
@@ -387,6 +387,51 @@
                 "instantiate"
             ],
             "time": "2015-06-14T21:17:01+00:00"
+        },
+        {
+            "name": "php-platform/mock-config",
+            "version": "v0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPPlatform/mock-config.git",
+                "reference": "ba93f07e9c7d9752d442daf6eaa8faa91fc9e088"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPPlatform/mock-config/zipball/ba93f07e9c7d9752d442daf6eaa8faa91fc9e088",
+                "reference": "ba93f07e9c7d9752d442daf6eaa8faa91fc9e088",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3",
+                "php-platform/config": "~0.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.8"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpPlatform\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "Raghavendra K R",
+                    "email": "raaghu1987@gmail.com",
+                    "homepage": "http://krraghavendra.in",
+                    "role": "Software Developer"
+                }
+            ],
+            "homepage": "https://github.com/PHPPlatform/mock-config",
+            "keywords": [
+                "Settings",
+                "config",
+                "mock",
+                "php-platform"
+            ],
+            "time": "2017-01-19T14:25:22+00:00"
         },
         {
             "name": "phpdocumentor/reflection-common",

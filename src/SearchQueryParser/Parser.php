@@ -7,7 +7,6 @@ use PhpPlatform\Errors\Exceptions\Http\_4XX\BadRequest;
 use PhpPlatform\Persist\Expression;
 use PhpPlatform\Persist\Model;
 use PhpPlatform\Persist\Field;
-use PhpPlatform\Errors\Exceptions\Application\BadInputException;
 use PhpPlatform\Persist\RelationalMappingUtil;
 
 class Parser {
@@ -45,7 +44,7 @@ class Parser {
 						!RelationalMappingUtil::_isAutoIncrement($field) && 
 						!RelationalMappingUtil::_isReference($field) &&
 						!in_array($fieldName, $excludeFromFullTextSearch)){
-						$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $field), $fullTextSearchQuery]);
+						$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $fieldName), $fullTextSearchQuery]);
 					}
 				}
 			}
@@ -135,7 +134,7 @@ class Parser {
 			$paginationParam = preg_split('/-/', $paginationParam);
 			if(count($paginationParam) != 2 ||
 					(!is_numeric($paginationParam[0]) || !is_int($paginationParam[0]+0)) ||
-					(!is_numeric($paginationParam[0]) || !is_int($paginationParam[1]+0)) ){
+					(!is_numeric($paginationParam[1]) || !is_int($paginationParam[1]+0)) ){
 						throw new BadRequest(['p'=>'invalid']);
 			}
 			$pagination = array('pageNumber'=>$paginationParam[0],'pageSize'=>$paginationParam[1]);
