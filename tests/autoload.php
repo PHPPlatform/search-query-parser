@@ -22,3 +22,6 @@ $_SERVER['REQUEST_METHOD'] = 'GET';
 
 // mock database
 MockSettings::setSettings('php-platform/persist', 'connection-class', 'PhpPlatform\Tests\SearchQueryParser\MockDataBase');
+
+// set date_default_timezone_set
+date_default_timezone_set('Asia/Kolkata');
