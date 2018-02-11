@@ -44,14 +44,7 @@ class Parser {
 						!RelationalMappingUtil::_isAutoIncrement($field) &&
 						!RelationalMappingUtil::_isReference($field) &&
 						!in_array($fieldName, $excludeFromFullTextSearch)){
-							if(RelationalMappingUtil::_isForeignField($field)){
-								$foreignClassAndField = preg_split("/\-\>/",$field['foreignField']);
-								$foreignClassName = $foreignClassAndField[0];
-								$foreignFieldName = $foreignClassAndField[1];
-								$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($foreignClassName, $foreignFieldName), $fullTextSearchQuery]);
-							}else{
-								$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $fieldName), $fullTextSearchQuery]);
-							}
+							$fullTextSearchExpressions[] = new Expression(Model::OPERATOR_LIKE, [new Field($className, $fieldName), $fullTextSearchQuery]);
 					}
 				}
 			}

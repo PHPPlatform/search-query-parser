@@ -8,6 +8,7 @@ use PhpPlatform\SearchQueryParser\Parser;
 use PhpPlatform\Errors\Exceptions\Http\_4XX\BadRequest;
 use PhpPlatform\Persist\RelationalMappingUtil;
 use PhpPlatform\Persist\TransactionManager;
+use PhpPlatform\Persist\RelationalMappingCache;
 
 class TestParser extends \PHPUnit_Framework_TestCase{
 	
@@ -283,7 +284,7 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
 				null,
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3_M3_ID.NAME LIKE '%abcd%') OR (m3_M3_ID.PHONE LIKE '%abcd%')"]
 			],
 			"with full text search for child class"=>[
 				$this->getHttpRequestWithQueryParameters([
@@ -291,7 +292,7 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
 				null,
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m2.ADDRESS LIKE '%abcd%') OR (m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m2.ADDRESS LIKE '%abcd%') OR (m1.NAME LIKE '%abcd%') OR (m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3_M3_ID.NAME LIKE '%abcd%') OR (m3_M3_ID.PHONE LIKE '%abcd%')"]
 			],
 			"with full text search excluding a field"=>[
 				$this->getHttpRequestWithQueryParameters([
@@ -299,7 +300,7 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M1',
 				['name'],
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.USER_NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3_M3_ID.NAME LIKE '%abcd%') OR (m3_M3_ID.PHONE LIKE '%abcd%')"]
 			],
 			"with full text search for child class and excluding a field"=>[
 				$this->getHttpRequestWithQueryParameters([
@@ -307,7 +308,7 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
 				['userName','address'],
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m1.M3_ID LIKE '%abcd%') OR (m3_M3_ID.NAME LIKE '%abcd%') OR (m3_M3_ID.PHONE LIKE '%abcd%')"]
 			],
 			"with full text search for child class and excluding a foreign field"=>[
 				$this->getHttpRequestWithQueryParameters([
@@ -315,7 +316,7 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 				]),
 				'PhpPlatform\Tests\SearchQueryParser\Models\M2',
 				['userName','address','m3Id','m3Name'],
-				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m3.PHONE LIKE '%abcd%')"]
+				['filters'=>[],'sort'=>[],'pagination'=>null,'where'=>"(m1.NAME LIKE '%abcd%') OR (m3_M3_ID.PHONE LIKE '%abcd%')"]
 			],
 				
 		];
@@ -341,14 +342,22 @@ class TestParser extends \PHPUnit_Framework_TestCase{
 	private function getColumnNameMappingForTestModels(){
 		$mapping = array();
 		
-		foreach (['PhpPlatform\Tests\SearchQueryParser\Models\M2','PhpPlatform\Tests\SearchQueryParser\Models\M3'] as $_className){
-			$classList = RelationalMappingUtil::getClassConfiguration($_className);
-			
-			foreach ($classList as $className=>$class){
-				$prefix = $class['prefix'];
-				foreach ($class['fields'] as $fieldName=>$field){
-					$mapping["$className::$fieldName"] = $prefix.'.'.$field['columnName'];
+		$classList = RelationalMappingUtil::getClassConfiguration('PhpPlatform\Tests\SearchQueryParser\Models\M2');
+		
+		foreach ($classList as $className=>$class){
+			$prefix = $class['prefix'];
+			foreach ($class['fields'] as $fieldName=>$field){
+				$columnName = $field['columnName'];
+				if(RelationalMappingUtil::_isForeignField($field)){
+					$foreignClassAndField = preg_split("/\-\>/",$field['foreignField']);
+					$foreignClassName = $foreignClassAndField[0];
+					$foreignFieldName = $foreignClassAndField[1];
+					$foreignClassConf = RelationalMappingCache::getInstance()->get($foreignClassName);
+					
+					$prefix = $foreignClassConf['prefix']."_".$field['columnName'];
+					$columnName = $foreignClassConf['fields'][$foreignFieldName]['columnName'];
 				}
+				$mapping["$className::$fieldName"] = $prefix.'.'.$columnName;
 			}
 		}
 		return $mapping;
